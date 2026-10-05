@@ -1,0 +1,53 @@
+# Publishes @trustabl/agent-reliability-otel-labels on a typescript/v* tag.
+# The version is set in typescript/package.json by the release commit; the tag
+# must match it, so the repository always says what npm has.
+name: release-typescript
+
+on:
+  push:
+    tags: ['typescript/v*']
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write      # npm provenance
+    defaults:
+      run:
+        working-directory: typescript
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Tag matches package.json
+        run: |
+          TAG="${GITHUB_REF_NAME#typescript/v}"
+          PKG=$(node -p "require('./package.json').version")
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::tag ${GITHUB_REF_NAME} does not match package.json version ${PKG}"
+            exit 1
+          fi
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm typecheck
+      - run: pnpm build
+      # A pre-release (0.2.0-rc.1) goes to the "next" dist-tag; without it npm
+      # makes the pre-release the version everyone installs by default.
+      - name: Publish
+        run: |
+          case "$(node -p "require('./package.json').version")" in
+            *-*) DIST_TAG=next ;;
+            *)   DIST_TAG=latest ;;
+          esac
+          npm publish --access public --provenance --tag "$DIST_TAG"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_SECRET }}
