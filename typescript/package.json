@@ -1,0 +1,50 @@
+{
+  "name": "@trustabl/agent-reliability-otel-labels",
+  "version": "0.1.0-dev.0",
+  "description": "Process-metadata labels for OpenTelemetry agent spans",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "cross-check": "tsx scripts/cross-check.ts"
+  },
+  "dependencies": {
+    "@noble/hashes": "^1.8.0"
+  },
+  "peerDependencies": {
+    "@opentelemetry/api": "^1.4.0"
+  },
+  "devDependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/sdk-trace-base": "^2.11.0",
+    "@types/node": "^22.0.0",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.0",
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.7"
+  }
+}
