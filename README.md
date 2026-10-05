@@ -163,7 +163,11 @@ worse.
 
 ## Status
 
-**Pre-release.** The attribute names are *reserved* in the
+**v0.1.0, first public release**, on
+[PyPI](https://pypi.org/project/agent-reliability-otel-labels/),
+[npm](https://www.npmjs.com/package/@trustabl/agent-reliability-otel-labels) and
+[pkg.go.dev](https://pkg.go.dev/github.com/trustabl/agent-reliability-otel-labels/go).
+Before 1.0, a minor version may change the API. The attribute names are *reserved* in the
 Trustabl attribute spec, meaning nothing else may claim them, and they become a
 spec addition when this ships.
 
