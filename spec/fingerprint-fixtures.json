@@ -1,0 +1,294 @@
+{
+  "$comment": "Golden canonicalization. Every language binding must reproduce both the canonical string and the fingerprint exactly. Compare `canonical` first: a character diff says what went wrong, a hash diff does not. See docs/PORTING.md.",
+  "algorithm": {
+    "serialize": "RFC 8785 (JCS) after volatile keys are stripped: keys sorted by UTF-16 code units, no whitespace, strings and numbers as ECMAScript JSON.stringify writes them, UTF-8 raw, HTML characters unescaped",
+    "hash": "sha256 over the UTF-8 bytes, hex, first 16 characters",
+    "reject": "a value that cannot be canonicalized yields no fingerprint: integral numbers beyond ±(2^53−1) (floats included), NaN, ±Infinity, non-string keys, non-JSON types"
+  },
+  "cases": [
+    {
+      "name": "simple flat object",
+      "input": {
+        "from": "SFO",
+        "to": "JFK",
+        "date": "2026-10-01"
+      },
+      "canonical": "{\"date\":\"2026-10-01\",\"from\":\"SFO\",\"to\":\"JFK\"}",
+      "fingerprint": "c1baebf63d8d7587"
+    },
+    {
+      "name": "key order is irrelevant",
+      "input": {
+        "date": "2026-10-01",
+        "to": "JFK",
+        "from": "SFO"
+      },
+      "canonical": "{\"date\":\"2026-10-01\",\"from\":\"SFO\",\"to\":\"JFK\"}",
+      "fingerprint": "c1baebf63d8d7587"
+    },
+    {
+      "name": "volatile fields stripped",
+      "input": {
+        "from": "SFO",
+        "to": "JFK",
+        "date": "2026-10-01",
+        "request_id": "req-abc",
+        "timestamp": "2026-09-22T10:00:00Z"
+      },
+      "canonical": "{\"date\":\"2026-10-01\",\"from\":\"SFO\",\"to\":\"JFK\"}",
+      "fingerprint": "c1baebf63d8d7587"
+    },
+    {
+      "name": "nested volatile stripped",
+      "input": {
+        "outer": {
+          "query": "x",
+          "trace_id": "deadbeef"
+        }
+      },
+      "canonical": "{\"outer\":{\"query\":\"x\"}}",
+      "fingerprint": "00fa1f2d64995abf"
+    },
+    {
+      "name": "volatile inside a list",
+      "input": {
+        "items": [
+          {
+            "sku": "A1",
+            "nonce": "n1"
+          }
+        ]
+      },
+      "canonical": "{\"items\":[{\"sku\":\"A1\"}]}",
+      "fingerprint": "5dd8bc3e94bf73ca"
+    },
+    {
+      "name": "meaningful id preserved",
+      "input": {
+        "customer_id": "c-42"
+      },
+      "canonical": "{\"customer_id\":\"c-42\"}",
+      "fingerprint": "ab4eda6058b55ac8"
+    },
+    {
+      "name": "empty object",
+      "input": {},
+      "canonical": "{}",
+      "fingerprint": "44136fa355b3678a"
+    },
+    {
+      "name": "empty list",
+      "input": [],
+      "canonical": "[]",
+      "fingerprint": "4f53cda18c2baa0c"
+    },
+    {
+      "name": "nulls and booleans",
+      "input": {
+        "a": null,
+        "b": true,
+        "c": false
+      },
+      "canonical": "{\"a\":null,\"b\":true,\"c\":false}",
+      "fingerprint": "17073ac6186d8c60"
+    },
+    {
+      "name": "integers stay integral",
+      "input": {
+        "i": 42,
+        "neg": -7
+      },
+      "canonical": "{\"i\":42,\"neg\":-7}",
+      "fingerprint": "8bd90c40fe02268f"
+    },
+    {
+      "name": "whole floats render as integers",
+      "input": {
+        "f": 1.0,
+        "g": 1.5
+      },
+      "canonical": "{\"f\":1,\"g\":1.5}",
+      "fingerprint": "c37be9f9fb208a6a"
+    },
+    {
+      "name": "non-ascii emitted raw",
+      "input": {
+        "q": "vol Paris → Tōkyō"
+      },
+      "canonical": "{\"q\":\"vol Paris → Tōkyō\"}",
+      "fingerprint": "31eb0897efa6046c"
+    },
+    {
+      "name": "html characters unescaped",
+      "input": {
+        "q": "a<b>c&d"
+      },
+      "canonical": "{\"q\":\"a<b>c&d\"}",
+      "fingerprint": "21efa0386f473b5c"
+    },
+    {
+      "name": "nested lists",
+      "input": {
+        "m": [
+          [
+            1,
+            2
+          ],
+          [
+            3,
+            4
+          ]
+        ]
+      },
+      "canonical": "{\"m\":[[1,2],[3,4]]}",
+      "fingerprint": "cb0d2df9bcdf9160"
+    },
+    {
+      "name": "string that looks numeric",
+      "input": {
+        "z": "007"
+      },
+      "canonical": "{\"z\":\"007\"}",
+      "fingerprint": "7538fa5d2cb816dd"
+    },
+    {
+      "name": "large safe float, no exponent",
+      "input": {
+        "n": 1000000000000000.0
+      },
+      "canonical": "{\"n\":1000000000000000}",
+      "fingerprint": "343b60d4af301a43"
+    },
+    {
+      "name": "small float, positional",
+      "input": {
+        "n": 1e-05
+      },
+      "canonical": "{\"n\":0.00001}",
+      "fingerprint": "694af9772b95df94"
+    },
+    {
+      "name": "tiny float, exponent",
+      "input": {
+        "n": 1e-07
+      },
+      "canonical": "{\"n\":1e-7}",
+      "fingerprint": "747d6d23b64d1b2d"
+    },
+    {
+      "name": "negative zero",
+      "input": {
+        "n": -0.0
+      },
+      "canonical": "{\"n\":0}",
+      "fingerprint": "f3013f933b9fb80a"
+    },
+    {
+      "name": "keys sorted by UTF-16 code units",
+      "input": {
+        "ﬁ": 1,
+        "😀": 2
+      },
+      "canonical": "{\"😀\":2,\"ﬁ\":1}",
+      "fingerprint": "14dc6c14e11d686b"
+    },
+    {
+      "name": "control characters in a string",
+      "input": {
+        "s": "a\u0000b\tc\nd\u001fe\"f\\g"
+      },
+      "canonical": "{\"s\":\"a\\u0000b\\tc\\nd\\u001fe\\\"f\\\\g\"}",
+      "fingerprint": "9b0b4dc7b68f2722"
+    },
+    {
+      "name": "volatile keys match by full Unicode lowercasing",
+      "input": {
+        "TİMESTAMP": 1,
+        "IDEMPOTENCY_\u212aEY": 2
+      },
+      "canonical": "{\"TİMESTAMP\":1}",
+      "fingerprint": "d66b49e73970efb2"
+    },
+    {
+      "name": "lone surrogate inside a volatile field is stripped",
+      "input": {
+        "timestamp": {
+          "s": "\udc00"
+        },
+        "a": 1
+      },
+      "canonical": "{\"a\":1}",
+      "fingerprint": "015abd7f5cc57a2d"
+    },
+    {
+      "name": "lone surrogate key inside a volatile field is stripped",
+      "input": {
+        "timestamp": {
+          "\ud800": 1
+        }
+      },
+      "canonical": "{}",
+      "fingerprint": "44136fa355b3678a"
+    },
+    {
+      "name": "underflow to zero",
+      "input": {
+        "a": 1e-400
+      },
+      "canonical": "{\"a\":0}",
+      "fingerprint": "45b619e97b5d9b02"
+    },
+    {
+      "name": "DEL is written raw",
+      "input": {
+        "s": "a\u007fb"
+      },
+      "canonical": "{\"s\":\"a\u007fb\"}",
+      "fingerprint": "8f8675bc3c1b4364"
+    },
+    {
+      "name": "duplicate keys, last one wins",
+      "input": {
+        "a": 1,
+        "a": 2
+      },
+      "canonical": "{\"a\":2}",
+      "fingerprint": "7e8059f495589fcd"
+    }
+  ],
+  "rejected": {
+    "$comment": "Inputs every binding must refuse to canonicalize, so none of them gets a fingerprint. JavaScript cannot tell 1e16 from 10000000000000000, so every binding refuses integral values beyond ±(2^53−1) whether written as an integer or a float. NaN, ±Infinity and non-JSON types cannot be written in JSON; each binding tests those itself.",
+    "cases": [
+      {
+        "name": "integer beyond the safe range",
+        "input": {
+          "n": 9007199254740992
+        }
+      },
+      {
+        "name": "negative integer beyond the safe range",
+        "input": {
+          "n": -9007199254740992
+        }
+      },
+      {
+        "name": "whole float beyond the safe range",
+        "input": {
+          "n": 1e+16
+        }
+      },
+      {
+        "name": "exponent float beyond the safe range",
+        "input": {
+          "n": 1e+21
+        }
+      },
+      {
+        "name": "lone surrogate in a string",
+        "input": {
+          "s": "\ud800"
+        }
+      }
+    ]
+  }
+}
