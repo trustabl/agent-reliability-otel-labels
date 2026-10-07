@@ -27,30 +27,47 @@ is a peer dependency; the OpenTelemetry SDK is not required.
 ## Use
 
 ```typescript
-import { Run, bindAuthority, markRunEnd, markToolSpan } from "@trustabl/agent-reliability-otel-labels";
+import { Run, bindAuthority, canonicalFp, markRunEnd, markToolSpan } from "@trustabl/agent-reliability-otel-labels";
 
-const run = new Run();
+async function runAgent(args: Record<string, unknown>) {
+  const run = new Run();                      // one per run: never share a Run between runs
+  const attempts = new Map<string, number>(); // calls so far in this run, per arguments fingerprint
 
-await tracer.startActiveSpan("invoke_agent", async (root) => {
-  run.markStart(root);
-  bindAuthority(root, [
-    { id: "openshell-seccomp-v3", type: "sandbox", sha256: "...",
-      version: "3.1.0", required: true, source: "entrypoint" },
-  ]);
+  await tracer.startActiveSpan("invoke_agent", async (root) => {
+    run.markStart(root);
+    bindAuthority(root, [
+      { id: "openshell-seccomp-v3", type: "sandbox", sha256: "...",
+        version: "3.1.0", required: true, source: "entrypoint" },
+    ]);
+    try {
+      await tracer.startActiveSpan("execute_tool", async (span) => {
+        const key = canonicalFp(args);
+        const attempt = (attempts.get(key) ?? 0) + 1;
+        attempts.set(key, attempt);
+        const stepIndex = run.nextStep();
+        let result: unknown;
+        try {
+          result = await searchFlights(args);
+        } finally {
+          // In finally, so a call that throws is labelled too.
+          markToolSpan(span, {
+            args, result, attempt, sideEffect: "read",
+            stepIndex, runId: run.runId,
+          });
+          span.end();
+        }
+      });
 
-  await tracer.startActiveSpan("execute_tool", async (span) => {
-    const result = await searchFlights(args);
-    markToolSpan(span, {
-      args, result, attempt: 1, sideEffect: "read",
-      stepIndex: run.nextStep(), runId: run.runId,
-    });
-    span.end();
+      // Call before the root span ends; an ended span drops the write.
+      markRunEnd(root, "final_answer");
+    } catch (err) {
+      markRunEnd(root, "error");
+      throw err;
+    } finally {
+      root.end();
+    }
   });
-
-  // Call before the root span ends; an ended span drops the write.
-  markRunEnd(root, "final_answer");
-  root.end();
-});
+}
 ```
 
 Arguments and results are fingerprinted, never stored: the span carries a

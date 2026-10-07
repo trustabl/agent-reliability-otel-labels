@@ -27,25 +27,40 @@ the OpenTelemetry SDK.
 ## Use
 
 ```python
-from agent_reliability_otel_labels import Binding, Run, bind_authority, mark_run_end, mark_tool_span
+from agent_reliability_otel_labels import (
+    Binding, Run, bind_authority, canonical_fp, mark_run_end, mark_tool_span,
+)
 
-run = Run()
 
-with tracer.start_as_current_span("invoke_agent") as root:
-    run.mark_start(root)
-    bind_authority(root, bindings=[
-        Binding(id="openshell-seccomp-v3", type="sandbox", sha256=...,
-                version="3.1.0", required=True, source="entrypoint"),
-    ])
+def run_agent(args):
+    run = Run()      # one per run: never share a Run between runs
+    attempts = {}    # calls so far in this run, per arguments fingerprint
 
-    with tracer.start_as_current_span("execute_tool") as span:
-        result = search_flights(args)
-        mark_tool_span(span, args=args, result=result, attempt=1,
-                       side_effect="read", step_index=run.next_step(),
-                       run_id=run.run_id)
+    with tracer.start_as_current_span("invoke_agent") as root:
+        run.mark_start(root)
+        bind_authority(root, bindings=[
+            Binding(id="openshell-seccomp-v3", type="sandbox", sha256=...,
+                    version="3.1.0", required=True, source="entrypoint"),
+        ])
+        try:
+            with tracer.start_as_current_span("execute_tool") as span:
+                key = canonical_fp(args)
+                attempts[key] = attempts.get(key, 0) + 1
+                step = run.next_step()
+                result = None
+                try:
+                    result = search_flights(args)
+                finally:
+                    # In finally, so a call that raises is labelled too.
+                    mark_tool_span(span, args=args, result=result,
+                                   attempt=attempts[key], side_effect="read",
+                                   step_index=step, run_id=run.run_id)
 
-    # Call before the root span ends; an ended span drops the write.
-    mark_run_end(root, exit_reason="final_answer")
+            # Call before the root span ends; an ended span drops the write.
+            mark_run_end(root, exit_reason="final_answer")
+        except Exception:
+            mark_run_end(root, exit_reason="error")
+            raise
 ```
 
 Arguments and results are fingerprinted, never stored: the span carries a
