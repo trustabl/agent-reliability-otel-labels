@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agent-reliability-otel-labels"
-version = "0.1.0"
+version = "0.1.1"
 description = "Process-metadata labels for OpenTelemetry agent spans"
 readme = "README.md"
 requires-python = ">=3.9"
