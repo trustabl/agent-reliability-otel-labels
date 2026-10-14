@@ -194,7 +194,8 @@ worse.
 
 ## Status
 
-**v0.1.0, first public release**, on
+**v0.1.1** for Python and TypeScript (v0.1.0 for Go; v0.1.0 was the first
+public release), on
 [PyPI](https://pypi.org/project/agent-reliability-otel-labels/),
 [npm](https://www.npmjs.com/package/@trustabl/agent-reliability-otel-labels) and
 [pkg.go.dev](https://pkg.go.dev/github.com/trustabl/agent-reliability-otel-labels/go).
