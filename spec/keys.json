@@ -1,10 +1,10 @@
 {
   "$comment": "The shared source of truth for every language binding. Derived from the Trustabl attribute spec, where these names are RESERVED. Adding a key here is step two of three: amend that spec with a named producer and bump it first, then this manifest, then the code. Each binding has a test asserting it matches this file.",
-  "profile_version": "1.0.0",
+  "profile_version": "1.1.0",
   "derived_from": {
     "spec": "Trustabl attribute spec",
-    "spec_version": "1.2",
-    "status": "these names are reserved in 1.2 and land as a 1.3 addition when this emitter ships; profile 1.0.0 is the list proposed for 1.3"
+    "spec_version": "1.5",
+    "status": "the trustabl.cot.* keys are the spec's 1.5 addition, with this library as their named producer; the process keys and the policy-binding event stay reserved there and land as a later 1.x addition; profile 1.1.0 is profile 1.0.0 plus the trustabl.cot.* keys"
   },
   "attributes": [
     "trustabl.step_index",
@@ -15,7 +15,10 @@
     "trustabl.tool.error_class",
     "trustabl.tool.attempt",
     "trustabl.handoff_id",
-    "trustabl.exit_reason"
+    "trustabl.exit_reason",
+    "trustabl.cot.present",
+    "trustabl.cot.text_fp",
+    "trustabl.cot.mode"
   ],
   "events": {
     "policy_binding": "trustabl.policy.binding"
@@ -33,13 +36,18 @@
     "error_class": ["timeout", "4xx", "5xx", "empty", "schema", "auth"],
     "exit_reason": ["final_answer", "max_steps", "policy_stop", "error"],
     "binding_type": ["sandbox", "content_safety", "tool_grants", "retention", "data_security", "custom"],
-    "binding_source": ["entrypoint", "inherited", "sidecar", "external"]
+    "binding_source": ["entrypoint", "inherited", "sidecar", "external"],
+    "cot_mode": ["explicit_cot", "latent", "symbolic", "hybrid", "none"]
   },
   "fingerprint": {
     "algorithm": "sha256",
     "encoding": "hex",
     "length": 16,
     "serialization": "RFC 8785 (JCS) after volatile fields are stripped; a value that cannot be canonicalized yields no fingerprint"
+  },
+  "gen_ai_filled_if_absent": {
+    "$comment": "Their keys, their values. A binding fills one of these only when the instrumentor left it empty and the span's attributes are readable, never overwrites one, and never mints a trustabl.* key for the same concept.",
+    "keys": ["gen_ai.tool.name", "gen_ai.usage.reasoning.output_tokens"]
   },
   "not_emitted_here": {
     "$comment": "Produced elsewhere. A binding that emits these creates a second producer for one key.",
