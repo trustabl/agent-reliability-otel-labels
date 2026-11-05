@@ -46,7 +46,12 @@ def test_enums_match_the_manifest():
     assert set(m["exit_reason"]) == set(keys.EXIT_REASONS)
     assert set(m["binding_type"]) == set(keys.BINDING_TYPES)
     assert set(m["binding_source"]) == set(keys.BINDING_SOURCES)
+    assert set(m["cot_mode"]) == set(keys.COT_MODES)
 
 
-def test_the_profile_is_frozen_at_1_0():
-    assert _manifest()["profile_version"] == "1.0.0"
+def test_the_token_key_we_may_fill_is_the_one_the_manifest_names():
+    assert keys.GEN_AI_REASONING_TOKENS in _manifest()["gen_ai_filled_if_absent"]["keys"]
+
+
+def test_the_profile_is_at_1_1():
+    assert _manifest()["profile_version"] == "1.1.0"

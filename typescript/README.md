@@ -2,7 +2,7 @@
 
 Process-metadata labels for OpenTelemetry agent spans.
 
-This library adds about nine attributes and one event type to spans that your
+This library adds about a dozen attributes and one event type to spans that your
 agent **already emits**. It answers questions a trace cannot otherwise answer:
 was this the same call as before, was this a retry, does this tool destroy
 something, and which signed policies were actually in force.
@@ -74,6 +74,11 @@ Arguments and results are fingerprinted, never stored: the span carries a
 16-character hash, not what the caller asked for. No usable span is a silent
 no-op, so a workload with tracing disabled is unaffected.
 
+Reasoning text passed to `markReasoning` is treated the same way, and only its
+fingerprint reaches the span. Pass the reasoning, not the answer. The token count
+stays OTel's `gen_ai.usage.reasoning.output_tokens`: it is filled only when your
+instrumentation left it empty.
+
 ## What it writes
 
 | Attribute | On | Answers |
@@ -88,6 +93,9 @@ no-op, so a workload with tracing disabled is unaffected.
 | `trustabl.handoff_id` | child agent span | Which agent delegated to which? |
 | `trustabl.exit_reason` | root, before it ends | How did the run end? |
 | `trustabl.policy.binding` (event) | agent / sandbox root | Which signed policies were loaded? |
+| `trustabl.cot.present` | model calls | Did this call reason? Omitted when nothing says either way. |
+| `trustabl.cot.text_fp` | model calls | Was this the same reasoning text? The text itself is never stored. |
+| `trustabl.cot.mode` | model calls | `explicit_cot`, `latent`, `symbolic`, `hybrid` or `none`, as you declare it. Omitted when unknown. |
 
 ## More
 

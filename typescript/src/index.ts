@@ -7,11 +7,12 @@
  */
 
 export * as keys from "./keys.js";
-export type { BindingSource, BindingType, ErrorClass, ExitReason, SideEffect } from "./keys.js";
+export type { BindingSource, BindingType, CotMode, ErrorClass, ExitReason, SideEffect } from "./keys.js";
 
 export { CanonicalizationError, canonicalFp, canonicalJson, stripVolatile } from "./canonical.js";
 
 export { markToolSpan, type ToolSpanOptions } from "./spans.js";
+export { markReasoning, type ReasoningOptions } from "./reasoning.js";
 
 export { type Binding, bindAuthority } from "./authority.js";
 export { Run, markHandoff, markRunEnd } from "./run.js";

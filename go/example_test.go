@@ -44,3 +44,14 @@ func Example() {
 	_ = otellabels.MarkRunEnd(root, otellabels.FinalAnswer)
 	root.End()
 }
+
+// The README's reasoning block. Only the fingerprint leaves the process.
+func ExampleMarkReasoning() {
+	_, span := otel.Tracer("my-agent").Start(context.Background(), "chat")
+	defer span.End()
+
+	thinking, tokens := "compare both fares", 42
+	_ = otellabels.MarkReasoning(span, otellabels.Reasoning{
+		Text: thinking, Mode: otellabels.ModeLatent, ReasoningTokens: &tokens,
+	})
+}

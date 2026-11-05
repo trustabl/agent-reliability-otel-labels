@@ -91,7 +91,7 @@ export interface ToolSpanOptions {
  * getter throws whatever it throws. canonicalJson/canonicalFp still raise for
  * direct callers.
  */
-function setFingerprint(span: Span, key: string, value: unknown): void {
+export function setFingerprint(span: Span, key: string, value: unknown): void {
   let fp: string;
   try {
     fp = canonicalFp(value);

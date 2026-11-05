@@ -2,7 +2,7 @@
 
 Process-metadata labels for OpenTelemetry agent spans.
 
-This library adds about nine attributes and one event type to spans that your
+This library adds about a dozen attributes and one event type to spans that your
 agent **already emits**. It answers questions a trace cannot otherwise answer:
 was this the same call as before, was this a retry, does this tool destroy
 something, and which signed policies were actually in force.
@@ -146,6 +146,42 @@ _ = otellabels.MarkRunEnd(root, otellabels.FinalAnswer)
 root.End()
 ```
 
+## Label a model call's reasoning
+
+If your model reasons, label the span of the model call with the same care:
+
+```python
+with tracer.start_as_current_span("chat") as span:
+    response = call_model(prompt)
+    # Only the fingerprint leaves the process. Pass the reasoning, not the answer.
+    mark_reasoning(span, text=response.thinking, mode="latent",
+                   reasoning_tokens=response.usage.reasoning_tokens)
+```
+
+```typescript
+markReasoning(span, { text: response.thinking, mode: "latent", reasoningTokens: response.usage.reasoningTokens });
+```
+
+```go
+_ = otellabels.MarkReasoning(span, otellabels.Reasoning{
+	Text: thinking, Mode: otellabels.ModeLatent, ReasoningTokens: &tokens,
+})
+```
+
+Every argument is optional. A model that hides its reasoning still reports
+tokens, so pass what you have: tokens with no text says the model reasoned and
+showed nothing. A call that says nothing either way writes nothing, because an
+omitted `trustabl.cot.present` means "unknown" and false would be a false claim.
+
+Pass the text your provider returns, and declare the mode for what that text is.
+Some providers return a summary and never the raw chain of thought: the fingerprint
+then proves which summary the span saw and no more, and `explicit_cot`, which says
+the text is the reasoning itself, would overclaim. `latent` is the honest mode there.
+
+These labels say that a model reasoned and which text it produced. They do not
+say the reasoning was faithful: `present` means reasoning occurred, not that it
+caused the answer.
+
 ## What it writes
 
 | Attribute | On | Answers |
@@ -160,6 +196,9 @@ root.End()
 | `trustabl.handoff_id` | child agent span | Which agent delegated to which? |
 | `trustabl.exit_reason` | root, before it ends | How did the run end? |
 | `trustabl.policy.binding` (event) | agent / sandbox root | Which signed policies were loaded? |
+| `trustabl.cot.present` | model calls | Did this call reason? Omitted when nothing says either way. |
+| `trustabl.cot.text_fp` | model calls | Was this the same reasoning text? The text itself is never stored. |
+| `trustabl.cot.mode` | model calls | `explicit_cot`, `latent`, `symbolic`, `hybrid` or `none`, as you declare it. Omitted when unknown. |
 
 One event per policy. Never a flattened hash, never parallel arrays: a single
 combined hash reports a content policy as present when only the sandbox loaded.
@@ -168,10 +207,16 @@ combined hash reports a content policy as present when only the sandbox loaded.
 
 - **Does not create spans.** No active span is a silent no-op, never a span we invented.
 - **Does not auto-instrument.** No monkey-patching, no client wrapping, no import hooks.
-- **Does not carry content.** Arguments and results are fingerprinted, never stored.
+- **Does not carry content.** Arguments, results and reasoning text are fingerprinted, never stored.
   A test asserts no caller text reaches any attribute.
-- **Does not fingerprint model completions.** Chat is not supposed to repeat.
-- **Does not re-assert `gen_ai.*` keys** your instrumentation already set.
+- **Does not fingerprint model answers.** Chat is not supposed to repeat, so a
+  differing answer is not a finding. Reasoning text is hashed for a different
+  reason, to match a text captured elsewhere to its span, and a differing
+  reasoning fingerprint is not a finding either.
+- **Does not re-assert `gen_ai.*` keys** your instrumentation already set, and
+  mints no `trustabl.*` key for a concept they name:
+  `gen_ai.usage.reasoning.output_tokens` is the reasoning token count, and it is
+  filled only when it is empty.
 - **Does not emit keys produced elsewhere** — contract identity arrives through
   `OTEL_RESOURCE_ATTRIBUTES`, and bind quality comes from the collector processor.
 
@@ -192,6 +237,12 @@ otherwise every repeat looks unique and loop detection silently does nothing.
 The strip list is deliberately narrow: missing a loop is bad, inventing one is
 worse.
 
+Reasoning text is hashed the same way, and it needs more care than a tool's
+arguments, because a chain of thought quotes whatever the model read. The hash
+is one-way but not secret: anyone already holding a candidate text can hash it
+and confirm the match. No OTel convention for hashing reasoning exists yet, so
+this default is this library's own design rather than a standard.
+
 ## Status
 
 **v0.1.1** for Python and TypeScript (v0.1.0 for Go; v0.1.0 was the first
@@ -205,7 +256,7 @@ spec addition when this ships.
 
 | Binding | State |
 |---|---|
-| Python | implemented, 86 tests |
+| Python | implemented, 114 tests |
 | TypeScript | implemented; run against a real Vercel AI SDK agent with a scripted model |
 | Go | implemented; run against a real Google ADK agent with a scripted model |
 

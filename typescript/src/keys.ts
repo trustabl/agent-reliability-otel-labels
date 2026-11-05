@@ -19,6 +19,17 @@ export const TOOL_ATTEMPT = "trustabl.tool.attempt";
 export const HANDOFF_ID = "trustabl.handoff_id";
 export const EXIT_REASON = "trustabl.exit_reason";
 
+export const COT_PRESENT = "trustabl.cot.present";
+export const COT_TEXT_FP = "trustabl.cot.text_fp";
+export const COT_MODE = "trustabl.cot.mode";
+
+/**
+ * OTel's key, not ours: filled only when the instrumentor left it empty. There
+ * is deliberately no trustabl.cot.token_count, because one concept with two keys
+ * is what the attribute spec's rule 3 forbids.
+ */
+export const GEN_AI_REASONING_TOKENS = "gen_ai.usage.reasoning.output_tokens";
+
 /**
  * Emitted as one EVENT per policy. Parallel-array projections were rejected:
  * correlating by index silently mispairs an id with the wrong hash when an
@@ -48,12 +59,14 @@ const BINDING_TYPE_VALUES = [
   "custom",
 ] as const;
 const BINDING_SOURCE_VALUES = ["entrypoint", "inherited", "sidecar", "external"] as const;
+const COT_MODE_VALUES = ["explicit_cot", "latent", "symbolic", "hybrid", "none"] as const;
 
 export type SideEffect = (typeof SIDE_EFFECT_VALUES)[number];
 export type ErrorClass = (typeof ERROR_CLASS_VALUES)[number];
 export type ExitReason = (typeof EXIT_REASON_VALUES)[number];
 export type BindingType = (typeof BINDING_TYPE_VALUES)[number];
 export type BindingSource = (typeof BINDING_SOURCE_VALUES)[number];
+export type CotMode = (typeof COT_MODE_VALUES)[number];
 
 // Typed as sets of string so a JavaScript caller's unchecked value can be
 // tested with .has() without a cast.
@@ -62,3 +75,4 @@ export const ERROR_CLASSES: ReadonlySet<string> = new Set(ERROR_CLASS_VALUES);
 export const EXIT_REASONS: ReadonlySet<string> = new Set(EXIT_REASON_VALUES);
 export const BINDING_TYPES: ReadonlySet<string> = new Set(BINDING_TYPE_VALUES);
 export const BINDING_SOURCES: ReadonlySet<string> = new Set(BINDING_SOURCE_VALUES);
+export const COT_MODES: ReadonlySet<string> = new Set(COT_MODE_VALUES);

@@ -17,6 +17,15 @@ TOOL_ATTEMPT = "trustabl.tool.attempt"
 HANDOFF_ID = "trustabl.handoff_id"
 EXIT_REASON = "trustabl.exit_reason"
 
+COT_PRESENT = "trustabl.cot.present"
+COT_TEXT_FP = "trustabl.cot.text_fp"
+COT_MODE = "trustabl.cot.mode"
+
+#: OTel's key, not ours: filled only when the instrumentor left it empty. There
+#: is deliberately no trustabl.cot.token_count, because one concept with two keys
+#: is what the attribute spec's rule 3 forbids.
+GEN_AI_REASONING_TOKENS = "gen_ai.usage.reasoning.output_tokens"
+
 #: Emitted as one EVENT per policy. Parallel-array projections were considered
 #: and explicitly rejected: correlating by index silently mispairs an id with
 #: the wrong hash when an array is truncated, and this output is signed.
@@ -37,3 +46,4 @@ BINDING_TYPES = frozenset({
     "sandbox", "content_safety", "tool_grants", "retention", "data_security", "custom",
 })
 BINDING_SOURCES = frozenset({"entrypoint", "inherited", "sidecar", "external"})
+COT_MODES = frozenset({"explicit_cot", "latent", "symbolic", "hybrid", "none"})

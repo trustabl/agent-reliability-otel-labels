@@ -24,6 +24,9 @@ type manifest struct {
 	EventAttributes []string            `json:"event_attributes"`
 	Events          map[string]string   `json:"events"`
 	Enums           map[string][]string `json:"enums"`
+	GenAIFilled     struct {
+		Keys []string `json:"keys"`
+	} `json:"gen_ai_filled_if_absent"`
 }
 
 func loadManifest(t *testing.T) manifest {
@@ -104,6 +107,7 @@ func TestEnumsMatchTheManifest(t *testing.T) {
 		"exit_reason":    sortedStrings(exitReasons),
 		"binding_type":   sortedStrings(bindingTypes),
 		"binding_source": sortedStrings(bindingSources),
+		"cot_mode":       sortedStrings(cotModes),
 	} {
 		want := slices.Sorted(slices.Values(enums[name]))
 		if !slices.Equal(got, want) {
@@ -112,8 +116,14 @@ func TestEnumsMatchTheManifest(t *testing.T) {
 	}
 }
 
-func TestTheProfileIsFrozenAt10(t *testing.T) {
-	if v := loadManifest(t).ProfileVersion; v != "1.0.0" {
-		t.Errorf("profile_version = %q, want 1.0.0", v)
+func TestTheTokenKeyWeMayFillIsTheOneTheManifestNames(t *testing.T) {
+	if !slices.Contains(loadManifest(t).GenAIFilled.Keys, KeyGenAIReasoningTokens) {
+		t.Errorf("%s is not listed under gen_ai_filled_if_absent", KeyGenAIReasoningTokens)
+	}
+}
+
+func TestTheProfileIsAt11(t *testing.T) {
+	if v := loadManifest(t).ProfileVersion; v != "1.1.0" {
+		t.Errorf("profile_version = %q, want 1.1.0", v)
 	}
 }
