@@ -16,6 +16,11 @@ func TestNoActiveSpanIsASilentNoOp(t *testing.T) {
 			t.Error(err)
 		}
 	})
+	t.Run("reasoning", func(t *testing.T) {
+		if err := MarkReasoning(nil, Reasoning{Text: "compare both fares", Mode: ModeExplicitCoT}); err != nil {
+			t.Error(err)
+		}
+	})
 	t.Run("run", func(t *testing.T) {
 		NewRun("").MarkStart(nil)
 		if err := MarkRunEnd(nil, FinalAnswer); err != nil {

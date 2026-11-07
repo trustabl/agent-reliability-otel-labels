@@ -19,7 +19,17 @@ const (
 
 	KeyHandoffID  = "trustabl.handoff_id"
 	KeyExitReason = "trustabl.exit_reason"
+
+	KeyCoTPresent = "trustabl.cot.present"
+	KeyCoTTextFP  = "trustabl.cot.text_fp"
+	KeyCoTMode    = "trustabl.cot.mode"
 )
+
+// KeyGenAIReasoningTokens is OTel's key, not ours: filled only when the
+// instrumentor left it empty. There is deliberately no
+// trustabl.cot.token_count, because one concept with two keys is what the
+// attribute spec's rule 3 forbids.
+const KeyGenAIReasoningTokens = "gen_ai.usage.reasoning.output_tokens"
 
 // Emitted as one EVENT per policy. Parallel-array projections were rejected:
 // correlating by index silently mispairs an id with the wrong hash when an
@@ -90,6 +100,17 @@ const (
 	External   BindingSource = "external"
 )
 
+// CoTMode says how an agent reasons.
+type CoTMode string
+
+const (
+	ModeExplicitCoT CoTMode = "explicit_cot"
+	ModeLatent      CoTMode = "latent"
+	ModeSymbolic    CoTMode = "symbolic"
+	ModeHybrid      CoTMode = "hybrid"
+	ModeNone        CoTMode = "none"
+)
+
 // The valid values of each enum, checked at run time because a value built
 // from a string literal compiles whatever it says.
 var (
@@ -98,4 +119,5 @@ var (
 	exitReasons    = []ExitReason{FinalAnswer, MaxSteps, PolicyStop, Error}
 	bindingTypes   = []BindingType{Sandbox, ContentSafety, ToolGrants, Retention, DataSecurity, Custom}
 	bindingSources = []BindingSource{Entrypoint, Inherited, Sidecar, External}
+	cotModes       = []CoTMode{ModeExplicitCoT, ModeLatent, ModeSymbolic, ModeHybrid, ModeNone}
 )

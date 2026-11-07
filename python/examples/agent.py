@@ -23,7 +23,9 @@ from opentelemetry.sdk.trace.export import (
     SimpleSpanProcessor,
 )
 
-from agent_reliability_otel_labels import Binding, Run, bind_authority, mark_run_end, mark_tool_span
+from agent_reliability_otel_labels import (
+    Binding, Run, bind_authority, mark_reasoning, mark_run_end, mark_tool_span,
+)
 
 # The resource picks up OTEL_SERVICE_NAME from the environment.
 provider = TracerProvider()
@@ -59,6 +61,17 @@ def main():
         run.mark_start(root)
         bind_authority(root, bindings=BINDINGS)
 
+        # The model's reasoning: only its fingerprint leaves the process. A chain
+        # of thought quotes whatever the model read, so the text stays here.
+        with tracer.start_as_current_span("chat") as span:
+            span.set_attribute("gen_ai.operation.name", "chat")
+            mark_reasoning(
+                span,
+                text="SFO to JFK on 2026-10-01: search first, then compare fares.",
+                mode="explicit_cot",
+                reasoning_tokens=42,
+            )
+
         # Three identical calls: same input_fp three times, which is what a
         # loop rule matches on. The arguments themselves never leave the process.
         args = {"from": "SFO", "to": "JFK", "date": "2026-10-01"}
@@ -84,7 +97,7 @@ def main():
 
     provider.shutdown()  # flush before exit
     if os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT"):
-        print(f"sent 4 spans for run {run.run_id} to {os.environ['OTEL_EXPORTER_OTLP_ENDPOINT']}")
+        print(f"sent 5 spans for run {run.run_id} to {os.environ['OTEL_EXPORTER_OTLP_ENDPOINT']}")
 
 
 if __name__ == "__main__":

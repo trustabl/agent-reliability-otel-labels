@@ -254,7 +254,8 @@
       },
       "canonical": "{\"a\":2}",
       "fingerprint": "7e8059f495589fcd"
-    }
+    },
+    {"name": "a bare string, as reasoning text is", "input": "Step 1: compare \"SFO\" and JFK.\nStep 2: naïve fare check 😀 <ok> & done", "canonical": "\"Step 1: compare \\\"SFO\\\" and JFK.\\nStep 2: naïve fare check 😀 <ok> & done\"", "fingerprint": "9f176820f3c920ec"}
   ],
   "rejected": {
     "$comment": "Inputs every binding must refuse to canonicalize, so none of them gets a fingerprint. JavaScript cannot tell 1e16 from 10000000000000000, so every binding refuses integral values beyond ±(2^53−1) whether written as an integer or a float. NaN, ±Infinity and non-JSON types cannot be written in JSON; each binding tests those itself.",

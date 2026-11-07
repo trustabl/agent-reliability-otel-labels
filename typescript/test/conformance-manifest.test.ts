@@ -53,8 +53,13 @@ it("test_enums_match_the_manifest", () => {
   expect(sorted(keys.EXIT_REASONS)).toEqual(sorted(e.exit_reason));
   expect(sorted(keys.BINDING_TYPES)).toEqual(sorted(e.binding_type));
   expect(sorted(keys.BINDING_SOURCES)).toEqual(sorted(e.binding_source));
+  expect(sorted(keys.COT_MODES)).toEqual(sorted(e.cot_mode));
 });
 
-it("test_the_profile_is_frozen_at_1_0", () => {
-  expect(manifest().profile_version).toBe("1.0.0");
+it("test_the_token_key_we_may_fill_is_the_one_the_manifest_names", () => {
+  expect(manifest().gen_ai_filled_if_absent.keys).toContain(keys.GEN_AI_REASONING_TOKENS);
+});
+
+it("test_the_profile_is_at_1_1", () => {
+  expect(manifest().profile_version).toBe("1.1.0");
 });

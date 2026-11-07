@@ -16,6 +16,8 @@ def test_no_active_span_creates_no_span(tracing):
 
 
 def test_the_public_api_offers_no_way_to_fingerprint_a_completion():
+    # mark_reasoning is not one: it hashes reasoning to match a text captured
+    # elsewhere to its span, never to compare answers, and its docs say so.
     """Chat is not supposed to repeat, so a differing completion is not a
     finding. The guarantee is structural: no entry point exists that would
     fingerprint one. This fails the moment somebody adds mark_llm_span."""

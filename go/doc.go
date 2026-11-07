@@ -11,4 +11,7 @@
 // Every binding (Python, TypeScript, Go) produces the same fingerprint for
 // the same input. Structs are not accepted; marshal them with encoding/json
 // and pass json.RawMessage.
+//
+// Reasoning text gets the same treatment: MarkReasoning hashes it and drops it,
+// so only the fingerprint reaches the span.
 package otellabels

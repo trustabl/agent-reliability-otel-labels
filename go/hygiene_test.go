@@ -53,6 +53,29 @@ func TestNoArgumentOrResultTextReachesAnyAttribute(t *testing.T) {
 	}
 }
 
+func TestNoReasoningTextReachesAnyAttribute(t *testing.T) {
+	// A chain of thought quotes whatever the model read, so this is the most
+	// sensitive text the library is ever handed. Only its fingerprint may leave.
+	tracer, exporter := tracing(t)
+	withSpan(tracer, "chat", func(span trace.Span) {
+		_ = MarkReasoning(span, Reasoning{Text: secret, Mode: ModeExplicitCoT, ReasoningTokens: intPtr(12)})
+	})
+	span := finished(t, exporter)
+	written := everythingWritten(span)
+	for _, leak := range []string{secret, "Jane Doe", "123-45-6789"} {
+		if strings.Contains(written, leak) {
+			t.Errorf("%q reached a span attribute", leak)
+		}
+	}
+	want, err := CanonicalFP(secret)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := attrs(span.Attributes)[KeyCoTTextFP].AsString(); got != want {
+		t.Errorf("text_fp = %q, want the fingerprint %q", got, want)
+	}
+}
+
 func TestEveryAttributeWeWriteIsBoundedInLength(t *testing.T) {
 	tracer, exporter := tracing(t)
 	withSpan(tracer, "execute_tool", func(span trace.Span) {
@@ -60,6 +83,7 @@ func TestEveryAttributeWeWriteIsBoundedInLength(t *testing.T) {
 			Args: map[string]any{"blob": strings.Repeat("x", 50_000)}, Result: map[string]any{"blob": strings.Repeat("y", 50_000)},
 			Attempt: 1, SideEffect: Read, StepIndex: intPtr(0),
 		})
+		_ = MarkReasoning(span, Reasoning{Text: strings.Repeat("z", 50_000), Mode: ModeExplicitCoT})
 	})
 	for _, kv := range finished(t, exporter).Attributes {
 		if s := kv.Value.AsString(); len(s) > 64 {
@@ -72,9 +96,10 @@ func TestFingerprintsAreExactlyTheDeclaredLength(t *testing.T) {
 	tracer, exporter := tracing(t)
 	withSpan(tracer, "execute_tool", func(span trace.Span) {
 		_ = MarkToolSpan(span, ToolCall{Args: map[string]any{"a": 1}, Result: map[string]any{"b": 2}, Attempt: 1, SideEffect: Read})
+		_ = MarkReasoning(span, Reasoning{Text: "compare both fares"})
 	})
 	a := attrs(finished(t, exporter).Attributes)
-	for _, key := range []string{KeyToolInputFP, KeyToolOutputFP} {
+	for _, key := range []string{KeyToolInputFP, KeyToolOutputFP, KeyCoTTextFP} {
 		if !hex16.MatchString(a[key].AsString()) {
 			t.Errorf("%s = %q, want 16 hex characters", key, a[key].AsString())
 		}

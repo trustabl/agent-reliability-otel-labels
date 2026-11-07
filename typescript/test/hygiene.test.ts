@@ -7,7 +7,7 @@
 import type { ReadableSpan } from "@opentelemetry/sdk-trace-base";
 import { expect, it } from "vitest";
 
-import { Run, bindAuthority, keys, markRunEnd, markToolSpan } from "../src/index.js";
+import { Run, bindAuthority, canonicalFp, keys, markReasoning, markRunEnd, markToolSpan } from "../src/index.js";
 import { finished, tracing, withSpan } from "./tracing.js";
 
 // Deliberately fake. These tests assert it NEVER reaches a span; a credential
@@ -46,6 +46,22 @@ it("test_no_argument_or_result_text_reaches_any_attribute", () => {
   expect(written).not.toContain("123-45-6789");
 });
 
+it("test_no_reasoning_text_reaches_any_attribute", () => {
+  // A chain of thought quotes whatever the model read, so this is the most
+  // sensitive text the library is ever handed. Only its fingerprint may leave.
+  const { tracer, exporter } = tracing();
+  withSpan(tracer, "chat", (span) => {
+    markReasoning(span, { text: SECRET, mode: "explicit_cot", reasoningTokens: 12 });
+  });
+
+  const span = finished(exporter);
+  const written = everythingWritten(span);
+  expect(written).not.toContain(SECRET);
+  expect(written).not.toContain("Jane Doe");
+  expect(written).not.toContain("123-45-6789");
+  expect(span.attributes[keys.COT_TEXT_FP]).toBe(canonicalFp(SECRET));
+});
+
 it("test_every_attribute_we_write_is_bounded_in_length", () => {
   const { tracer, exporter } = tracing();
   withSpan(tracer, "execute_tool", (span) => {
@@ -53,6 +69,7 @@ it("test_every_attribute_we_write_is_bounded_in_length", () => {
       args: { blob: "x".repeat(50_000) }, result: { blob: "y".repeat(50_000) },
       attempt: 1, sideEffect: "read", stepIndex: 0,
     });
+    markReasoning(span, { text: "z".repeat(50_000), mode: "explicit_cot" });
   });
   for (const [key, value] of Object.entries(finished(exporter).attributes)) {
     if (typeof value === "string") expect(value.length, `${key} is unbounded`).toBeLessThanOrEqual(64);
@@ -63,8 +80,10 @@ it("test_fingerprints_are_exactly_the_declared_length", () => {
   const { tracer, exporter } = tracing();
   withSpan(tracer, "execute_tool", (span) => {
     markToolSpan(span, { args: { a: 1 }, result: { b: 2 }, attempt: 1, sideEffect: "read" });
+    markReasoning(span, { text: "compare both fares" });
   });
   const attrs = finished(exporter).attributes;
   expect(attrs[keys.TOOL_INPUT_FP]).toMatch(/^[0-9a-f]{16}$/);
   expect(attrs[keys.TOOL_OUTPUT_FP]).toMatch(/^[0-9a-f]{16}$/);
+  expect(attrs[keys.COT_TEXT_FP]).toMatch(/^[0-9a-f]{16}$/);
 });

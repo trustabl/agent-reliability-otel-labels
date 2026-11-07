@@ -11,7 +11,7 @@ is conformant; one that does not is a different profile wearing the same name.
 | File | What it pins |
 |---|---|
 | `spec/keys.json` | every attribute and event name, and every enum value |
-| `spec/fingerprint-fixtures.json` | the exact canonical string and fingerprint for 27 inputs, and 5 inputs every binding must refuse |
+| `spec/fingerprint-fixtures.json` | the exact canonical string and fingerprint for 28 inputs, and 5 inputs every binding must refuse |
 
 Both are derived from the Trustabl attribute spec, where these names are
 **reserved**. Adding a key is three steps in order: amend that spec with a
@@ -28,13 +28,14 @@ service hosts an agent. Low urgency, not low value.
 
 ## What every binding implements
 
-Five entry points, same names, same semantics:
+Six entry points, same names, same semantics:
 
 | Entry point | Does |
 |---|---|
 | `canonicalJson(obj)` | the exact string that gets hashed — **export it**, ports are debugged through it |
 | `canonicalFp(obj)` | sha256 of that string, hex, first 16 characters |
 | `markToolSpan(span, {...})` | the tool attributes |
+| `markReasoning(span, {...})` | the reasoning attributes |
 | `bindAuthority(span, bindings)` | one `trustabl.policy.binding` event per policy |
 | `Run` / `markRunEnd` / `markHandoff` | run id, step order, outcome, delegation |
 
@@ -49,10 +50,30 @@ And five behaviours that are not optional:
    time anyone runs with tracing on.
 4. **Strip volatile fields before hashing.** Forgetting this fails *silently*,
    which is why stripping is the default rather than a separate call.
-5. **`markToolSpan` never lets an exception from fingerprinting reach the
-   caller.** Not only `CanonicalizationError` - a circular argument or a
+5. **`markToolSpan` and `markReasoning` never let an exception from
+   fingerprinting reach the caller.** Not only `CanonicalizationError` - a circular argument or a
    throwing getter must not escape either. It omits that one fingerprint
    instead.
+
+## What `markReasoning` claims
+
+Each key makes one claim, and a wrong value reads as evidence, so every binding
+decides them the same way:
+
+- `trustabl.cot.present` is **true** on non-empty text or a positive token count,
+  **false** on a zero count or a declared `none`, and **absent** otherwise. Positive
+  evidence wins over a zero count, including a true `present` an earlier call left
+  on the span. A mode alone does not make it true: mode says how the agent reasons,
+  not whether this call did.
+- The token count is the caller's, or else the one the instrumentor already put on
+  the span. A count that is not a non-negative integer is ignored rather than
+  raised, because it can come from a provider's response at run time.
+- `trustabl.cot.text_fp` is `canonicalFp(text)`, for non-empty string text only. No
+  canonical form omits the fingerprint and keeps `present`.
+- `trustabl.cot.mode` is what the caller declared, validated like any enum, except
+  that a `none` the evidence refutes is omitted.
+- `gen_ai.usage.reasoning.output_tokens` is filled only when it is absent and
+  readable, like `gen_ai.tool.name`.
 
 ## The canonicalization contract
 
@@ -102,7 +123,7 @@ diff says what went wrong, a hash diff does not.
 - [ ] No usable span is a silent no-op, with no exception escaping
 - [ ] An existing `gen_ai.tool.name` survives a call that passes a different name
 - [ ] Attaches to spans from all three conventions without disturbing their attributes
-- [ ] No caller text reaches any attribute — assert over a value with a recognisable secret
+- [ ] No caller text reaches any attribute, reasoning text included: assert over a value with a recognisable secret
 - [ ] Every string attribute written is bounded in length
 - [ ] Order survives reordering: shuffle exported spans, sort by `step_index`, recover the sequence
 
