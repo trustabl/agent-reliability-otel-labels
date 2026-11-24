@@ -9,7 +9,14 @@
 import type { Span } from "@opentelemetry/api";
 import { bytesToHex, randomBytes } from "@noble/hashes/utils";
 
-import { EXIT_REASON, EXIT_REASONS, type ExitReason, HANDOFF_ID, RUN_ID } from "./keys.js";
+import {
+  EXIT_REASON,
+  EXIT_REASONS,
+  EXPECTED_TOOLS,
+  type ExitReason,
+  HANDOFF_ID,
+  RUN_ID,
+} from "./keys.js";
 import { checkEnum, isUnusable } from "./spans.js";
 
 /**
@@ -60,4 +67,22 @@ export function markRunEnd(span: Span | undefined, exitReason: ExitReason): void
 export function markHandoff(span: Span | undefined, handoffId: string): void {
   if (isUnusable(span)) return;
   span.setAttribute(HANDOFF_ID, handoffId);
+}
+
+/**
+ * Record which tools the run was expected to use, on the root span.
+ *
+ * Tool names only. An empty list leaves the key off: absence says "no
+ * expectation declared", which is not the same as "expected no tools".
+ */
+export function markExpectedTools(span: Span | undefined, tools: readonly string[]): void {
+  if (isUnusable(span)) return;
+  if (
+    !Array.isArray(tools) ||
+    !tools.every((t) => typeof t === "string" && t !== "")
+  ) {
+    throw new RangeError(`tools must be a list of non-empty strings, got ${JSON.stringify(tools)}`);
+  }
+  const names = [...new Set(tools)];
+  if (names.length > 0) span.setAttribute(EXPECTED_TOOLS, names);
 }

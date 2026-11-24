@@ -19,6 +19,16 @@ const (
 
 	KeyHandoffID  = "trustabl.handoff_id"
 	KeyExitReason = "trustabl.exit_reason"
+
+	// KeyExpectedTools is on the root span: the tool names the run was
+	// expected to use (array of string).
+	KeyExpectedTools = "trustabl.expected_tools"
+	// KeyRetrievalResultCount is on a retrieval span: how many results it
+	// returned (integer, >= 0).
+	KeyRetrievalResultCount = "trustabl.retrieval.result_count"
+	// KeyProgressMarker is on a tool span: the fingerprint of the task state
+	// after the step (16 hex chars).
+	KeyProgressMarker = "trustabl.progress_marker"
 )
 
 // Emitted as one EVENT per policy. Parallel-array projections were rejected:

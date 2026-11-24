@@ -152,3 +152,47 @@ func MarkToolSpan(span trace.Span, c ToolCall) error {
 	}
 	return nil
 }
+
+// RetrievalCall is one retrieval (vector search, RAG lookup) to label.
+type RetrievalCall struct {
+	// ResultCount must be >= 0. Zero is a real observation, so it is written.
+	ResultCount int
+	// StepIndex nil means omitted; it is a pointer because 0 is a real step.
+	StepIndex *int
+	// RunID "" means omitted.
+	RunID string
+}
+
+// MarkRetrievalSpan attaches the result count to one retrieval span. Only the
+// count is written, never the documents or the query. A negative count
+// returns an error and writes nothing; a nil or non-recording span returns nil.
+func MarkRetrievalSpan(span trace.Span, c RetrievalCall) error {
+	if unusable(span) {
+		return nil
+	}
+	if c.ResultCount < 0 {
+		return fmt.Errorf("otellabels: result count must be >= 0, got %d", c.ResultCount)
+	}
+	attrs := []attribute.KeyValue{attribute.Int64(KeyRetrievalResultCount, int64(c.ResultCount))}
+	if c.StepIndex != nil {
+		attrs = append(attrs, attribute.Int64(KeyStepIndex, int64(*c.StepIndex)))
+	}
+	if c.RunID != "" {
+		attrs = append(attrs, attribute.String(KeyRunID, c.RunID))
+	}
+	safely(func() { span.SetAttributes(attrs...) })
+	return nil
+}
+
+// MarkProgress attaches a progress marker: the fingerprint of the task state
+// after this step. State is fingerprinted, never stored. Two consecutive steps
+// with the same marker made no progress. A state with no canonical form leaves
+// the key off, which says "unknown".
+func MarkProgress(span trace.Span, state any) {
+	if unusable(span) {
+		return
+	}
+	if fp, ok := fingerprint(state); ok {
+		safely(func() { span.SetAttributes(attribute.String(KeyProgressMarker, fp)) })
+	}
+}

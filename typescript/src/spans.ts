@@ -14,6 +14,8 @@ import {
   RUN_ID,
   SIDE_EFFECTS,
   type SideEffect,
+  PROGRESS_MARKER,
+  RETRIEVAL_RESULT_COUNT,
   STEP_INDEX,
   TOOL_ATTEMPT,
   TOOL_ERROR_CLASS,
@@ -131,4 +133,35 @@ export function markToolSpan(span: Span | undefined, opts: ToolSpanOptions): voi
   if (opts.name != null && existing(span, "gen_ai.tool.name") === undefined) {
     span.setAttribute("gen_ai.tool.name", opts.name);
   }
+}
+
+export interface RetrievalSpanOptions {
+  /** Integer >= 0. Zero is a real observation, so it is written. */
+  resultCount: number;
+  stepIndex?: number;
+  runId?: string;
+}
+
+/**
+ * Attach the result count to one retrieval span (vector search, RAG lookup).
+ * Only the count is written, never the documents or the query.
+ */
+export function markRetrievalSpan(span: Span | undefined, opts: RetrievalSpanOptions): void {
+  if (isUnusable(span)) return;
+  if (!Number.isInteger(opts.resultCount) || opts.resultCount < 0) {
+    throw new RangeError(`resultCount must be an integer >= 0, got ${String(opts.resultCount)}`);
+  }
+  span.setAttribute(RETRIEVAL_RESULT_COUNT, opts.resultCount);
+  if (opts.stepIndex != null) span.setAttribute(STEP_INDEX, opts.stepIndex);
+  if (opts.runId != null) span.setAttribute(RUN_ID, opts.runId);
+}
+
+/**
+ * Attach a progress marker: the fingerprint of the task state after this step.
+ * state is fingerprinted, never stored. Two consecutive steps with the same
+ * marker made no progress. A state with no canonical form leaves the key off.
+ */
+export function markProgress(span: Span | undefined, state: unknown): void {
+  if (isUnusable(span)) return;
+  setFingerprint(span, PROGRESS_MARKER, state === undefined ? null : state);
 }

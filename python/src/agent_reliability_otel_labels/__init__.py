@@ -8,8 +8,8 @@ instrumented for any of this to do anything.
 from agent_reliability_otel_labels import keys
 from agent_reliability_otel_labels.fingerprint import canonical_fp, canonical_json, strip_volatile
 from agent_reliability_otel_labels.authority import Binding, bind_authority
-from agent_reliability_otel_labels.run import Run, mark_handoff, mark_run_end
-from agent_reliability_otel_labels.spans import mark_tool_span
+from agent_reliability_otel_labels.run import Run, mark_expected_tools, mark_handoff, mark_run_end
+from agent_reliability_otel_labels.spans import mark_progress, mark_retrieval_span, mark_tool_span
 
 __all__ = [
     "canonical_fp",
@@ -21,5 +21,8 @@ __all__ = [
     "Run",
     "mark_run_end",
     "mark_handoff",
+    "mark_expected_tools",
+    "mark_retrieval_span",
+    "mark_progress",
     "keys",
 ]
