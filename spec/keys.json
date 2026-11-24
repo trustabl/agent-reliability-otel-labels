@@ -15,7 +15,10 @@
     "trustabl.tool.error_class",
     "trustabl.tool.attempt",
     "trustabl.handoff_id",
-    "trustabl.exit_reason"
+    "trustabl.exit_reason",
+    "trustabl.expected_tools",
+    "trustabl.retrieval.result_count",
+    "trustabl.progress_marker"
   ],
   "events": {
     "policy_binding": "trustabl.policy.binding"

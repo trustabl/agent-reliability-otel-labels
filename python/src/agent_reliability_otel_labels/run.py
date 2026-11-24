@@ -63,3 +63,18 @@ def mark_handoff(span, *, handoff_id) -> None:
     if _unusable(span):
         return
     span.set_attribute(keys.HANDOFF_ID, handoff_id)
+
+
+def mark_expected_tools(span, *, tools) -> None:
+    """Record which tools the run was expected to use, on the root span.
+
+    Tool names only. An empty list leaves the key off: absence says "no
+    expectation declared", which is not the same as "expected no tools".
+    """
+    if _unusable(span):
+        return
+    if isinstance(tools, (str, bytes)) or not all(isinstance(t, str) and t for t in tools):
+        raise ValueError(f"tools must be a list of non-empty strings, got {tools!r}")
+    names = list(dict.fromkeys(tools))
+    if names:
+        span.set_attribute(keys.EXPECTED_TOOLS, names)

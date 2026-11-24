@@ -106,3 +106,36 @@ def mark_tool_span(span, *, args, result, attempt, side_effect=None,
     # empty, and never when we cannot tell.
     if name is not None and _existing(span, "gen_ai.tool.name") is None:
         span.set_attribute("gen_ai.tool.name", name)
+
+
+def mark_retrieval_span(span, *, result_count, step_index=None, run_id=None):
+    """Attach the result count to one retrieval span (vector search, RAG lookup).
+
+    Only the count is written, never the documents or the query. Zero is a real
+    observation ("the search found nothing"), so it is written, not omitted.
+    """
+    if _unusable(span):
+        return
+    if isinstance(result_count, bool) or not isinstance(result_count, int) or result_count < 0:
+        raise ValueError(f"result_count must be an integer >= 0, got {result_count!r}")
+
+    span.set_attribute(keys.RETRIEVAL_RESULT_COUNT, result_count)
+    if step_index is not None:
+        span.set_attribute(keys.STEP_INDEX, step_index)
+    if run_id is not None:
+        span.set_attribute(keys.RUN_ID, run_id)
+
+
+def mark_progress(span, *, state):
+    """Attach a progress marker: the fingerprint of the task state after this step.
+
+    state is whatever the caller treats as "where the task stands" (a plan, a
+    checklist, a working-set summary). It is fingerprinted, never stored. Two
+    consecutive steps with the same marker made no progress. A state with no
+    canonical form leaves the key off, which says "unknown".
+    """
+    if _unusable(span):
+        return
+    fp = _fingerprint_or_none(state)
+    if fp is not None:
+        span.set_attribute(keys.PROGRESS_MARKER, fp)

@@ -2,7 +2,7 @@
 
 Process-metadata labels for OpenTelemetry agent spans.
 
-This library adds about nine attributes and one event type to spans that your
+This library adds about twelve attributes and one event type to spans that your
 agent **already emits**. It answers questions a trace cannot otherwise answer:
 was this the same call as before, was this a retry, does this tool destroy
 something, and which signed policies were actually in force.
@@ -80,6 +80,9 @@ no-op, so a workload with tracing disabled is unaffected.
 | `trustabl.tool.attempt` | tool calls | Is it retrying? |
 | `trustabl.handoff_id` | child agent span | Which agent delegated to which? |
 | `trustabl.exit_reason` | root, before it ends | How did the run end? |
+| `trustabl.expected_tools` | root | Which tools was this run expected to use? Names only; omitted when none declared. |
+| `trustabl.retrieval.result_count` | retrieval spans | How many results did the lookup return? Zero is written. |
+| `trustabl.progress_marker` | tool calls | Did the task state change since the last step? A fingerprint of the state, never the state. |
 | `trustabl.policy.binding` (event) | agent / sandbox root | Which signed policies were loaded? |
 
 ## More

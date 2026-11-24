@@ -17,6 +17,13 @@ TOOL_ATTEMPT = "trustabl.tool.attempt"
 HANDOFF_ID = "trustabl.handoff_id"
 EXIT_REASON = "trustabl.exit_reason"
 
+#: Root span: the tool names the run was expected to use (array of string).
+EXPECTED_TOOLS = "trustabl.expected_tools"
+#: Retrieval span: how many results the retrieval returned (integer, >= 0).
+RETRIEVAL_RESULT_COUNT = "trustabl.retrieval.result_count"
+#: Tool span: fingerprint of the task state after the step (16 hex chars).
+PROGRESS_MARKER = "trustabl.progress_marker"
+
 #: Emitted as one EVENT per policy. Parallel-array projections were considered
 #: and explicitly rejected: correlating by index silently mispairs an id with
 #: the wrong hash when an array is truncated, and this output is signed.

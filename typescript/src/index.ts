@@ -11,7 +11,13 @@ export type { BindingSource, BindingType, ErrorClass, ExitReason, SideEffect } f
 
 export { CanonicalizationError, canonicalFp, canonicalJson, stripVolatile } from "./canonical.js";
 
-export { markToolSpan, type ToolSpanOptions } from "./spans.js";
+export {
+  markProgress,
+  markRetrievalSpan,
+  markToolSpan,
+  type RetrievalSpanOptions,
+  type ToolSpanOptions,
+} from "./spans.js";
 
 export { type Binding, bindAuthority } from "./authority.js";
-export { Run, markHandoff, markRunEnd } from "./run.js";
+export { Run, markExpectedTools, markHandoff, markRunEnd } from "./run.js";

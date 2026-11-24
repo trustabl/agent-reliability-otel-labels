@@ -19,6 +19,13 @@ export const TOOL_ATTEMPT = "trustabl.tool.attempt";
 export const HANDOFF_ID = "trustabl.handoff_id";
 export const EXIT_REASON = "trustabl.exit_reason";
 
+/** Root span: the tool names the run was expected to use (array of string). */
+export const EXPECTED_TOOLS = "trustabl.expected_tools";
+/** Retrieval span: how many results the retrieval returned (integer, >= 0). */
+export const RETRIEVAL_RESULT_COUNT = "trustabl.retrieval.result_count";
+/** Tool span: fingerprint of the task state after the step (16 hex chars). */
+export const PROGRESS_MARKER = "trustabl.progress_marker";
+
 /**
  * Emitted as one EVENT per policy. Parallel-array projections were rejected:
  * correlating by index silently mispairs an id with the wrong hash when an

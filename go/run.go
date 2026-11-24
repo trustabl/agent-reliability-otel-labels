@@ -9,6 +9,8 @@ package otellabels
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
+	"slices"
 	"sync/atomic"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -75,4 +77,27 @@ func MarkHandoff(span trace.Span, handoffID string) {
 		return
 	}
 	safely(func() { span.SetAttributes(attribute.String(KeyHandoffID, handoffID)) })
+}
+
+// MarkExpectedTools records which tools the run was expected to use, on the
+// root span. Tool names only; duplicates are dropped. An empty list leaves the
+// key off: absence says "no expectation declared", which is not the same as
+// "expected no tools". An empty name returns an error and writes nothing.
+func MarkExpectedTools(span trace.Span, tools []string) error {
+	if unusable(span) {
+		return nil
+	}
+	names := make([]string, 0, len(tools))
+	for _, t := range tools {
+		if t == "" {
+			return fmt.Errorf("otellabels: tools must be non-empty strings, got %q", tools)
+		}
+		if !slices.Contains(names, t) {
+			names = append(names, t)
+		}
+	}
+	if len(names) > 0 {
+		safely(func() { span.SetAttributes(attribute.StringSlice(KeyExpectedTools, names)) })
+	}
+	return nil
 }
